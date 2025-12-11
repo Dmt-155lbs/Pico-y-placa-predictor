@@ -1,6 +1,6 @@
 from src.LicensePlate import LicensePlate
 from datetime import datetime
-from utils.validators import parse_datetime
+from utils.validators import validate_date, validate_time
 
 class PicoPlacaPredictor:
     """
@@ -19,26 +19,22 @@ class PicoPlacaPredictor:
             4: [9, 0], # Friday
         }
     
-    def _is_time_restricted(self, time_obj) -> bool:
+    def _is_time_restricted(self, check_time) -> bool:
         """
         Internal helper to check if a specific time falls within restricted windows.
 
-        :param time_obj: The datetime object containing the time to check.
+        :param check_time: The datetime object containing the time to check.
         :return: True if the time is inside a restriction window, False otherwise.
         """
         """Helper to check if time is within restricted windows."""
 
-        current_time = time_obj.time()
-        
         morning_start = datetime.strptime("07:00", "%H:%M").time()
         morning_end = datetime.strptime("09:30", "%H:%M").time()
         evening_start = datetime.strptime("16:00", "%H:%M").time()
         evening_end = datetime.strptime("19:30", "%H:%M").time()
 
-        if (morning_start <= current_time <= morning_end) or \
-           (evening_start <= current_time <= evening_end):
-            return True
-        return False
+        return (morning_start <= check_time <= morning_end) or \
+               (evening_start <= check_time <= evening_end)
 
     def predict(self, plate: LicensePlate, date_str: str, time_str: str) -> bool:
         """
@@ -51,25 +47,29 @@ class PicoPlacaPredictor:
         :return: True if the vehicle is allowed to drive, False if restricted.
         """
         
-        try:
-            dt_obj = parse_datetime(date_str, time_str)
-        except ValueError:
-            print("Error: Invalid Date/Time format. Use YYYY-MM-DD and HH:MM")
-            return False
+        # 1. Validate and Parse Date
+        valid_date, dt_obj = validate_date(date_str)
+        if not valid_date:
+            raise ValueError(dt_obj) # Return the error message
 
-        # 1. Check Weekend (Saturday=5, Sunday=6)
-        day_of_week = dt_obj.weekday()
-        if day_of_week >= 5:
-            return True # Free to drive on weekends
+        # 2. Validate and Parse Time
+        valid_time, time_obj = validate_time(time_str)
+        if not valid_time:
+            raise ValueError(time_obj)
 
-        # 2. Check Plate Restriction
+        # 3. Check Weekend (Saturday=5, Sunday=6)
+        # Note: dt_obj from validators is a datetime, so we can use .weekday()
+        if dt_obj.weekday() >= 5:
+            return True 
+
+        # 4. Check Plate Restriction
         last_digit = plate.get_last_digit()
-        restricted_digits = self.RESTRICTIONS.get(day_of_week, [])
+        restricted_digits = self.RESTRICTIONS.get(dt_obj.weekday(), [])
 
         if last_digit in restricted_digits:
-            # 3. If plate is restricted today, check the TIME
-            if self._is_time_restricted(dt_obj):
-                return False # RESTRICTED
+            # 5. Check Time
+            if self._is_time_restricted(time_obj):
+                return False 
         
         return True
         
