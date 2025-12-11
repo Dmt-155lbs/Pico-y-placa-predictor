@@ -35,6 +35,31 @@ class TestPicoPlaca(unittest.TestCase):
         
         can_drive = predictor.predict(plate, "2025-12-08", "12:00")
         self.assertTrue(can_drive, "Plate ending in 1 should be allowed on Monday at noon")
+    
+    # Test 4: Invalid Plate Formats
+    def test_invalid_plate_format(self):
+        # This checks if Validator correctly raises an error
+        # "BANANA" is not a license plate -> Should raise ValueError
+        with self.assertRaises(ValueError):
+            LicensePlate("BANANA")
+            
+        # "PBX-12" is too short -> Should raise ValueError
+        with self.assertRaises(ValueError):
+            LicensePlate("PBX-12")
+    
+    # Test 5: Invalid Date/Time Inputs
+    def test_invalid_inputs(self):
+        predictor = PicoPlacaPredictor()
+        plate = LicensePlate("PBX-1234")
+
+        # Invalid Date format (YYYY/MM/DD instead of YYYY-MM-DD)
+        # This checks if predictor.predict catches the error from validators
+        with self.assertRaises(ValueError):
+            predictor.predict(plate, "2025/12/08", "08:00")
+
+        # Invalid Time format (8:00 instead of 08:00)
+        with self.assertRaises(ValueError):
+            predictor.predict(plate, "2025-12-08", "8:00")
 
 if __name__ == '__main__':
     unittest.main()
