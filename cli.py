@@ -1,5 +1,5 @@
-from classes.LicensePlate import LicensePlate
-from classes.PicoPlacaPredictor import PicoPlacaPredictor
+from src.LicensePlate import LicensePlate
+from src.PicoPlacaPredictor import PicoPlacaPredictor
 
 def run():
 
