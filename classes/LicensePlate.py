@@ -7,4 +7,4 @@ class LicensePlate:
         Returns the last digit of the plate as an integer.
 
         """
-        return 0
+        return int(self.plate_number[-1])
